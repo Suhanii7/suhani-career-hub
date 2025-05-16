@@ -1,23 +1,76 @@
 
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Search } from "lucide-react";
 import JobCard from "@/components/JobCard";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { jobs } from "@/data/jobs";
+import { toast } from "sonner";
 
 const Index = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const featuredJobs = jobs.slice(0, 4);
+  const [filteredJobs, setFilteredJobs] = useState(jobs.slice(0, 4));
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const navigate = useNavigate();
+  
+  // Job lists
+  const featuredJobs = filteredJobs;
   const recentJobs = [...jobs].sort((a, b) => 
     new Date(b.postedDate).getTime() - new Date(a.postedDate).getTime()
   ).slice(0, 3);
   
   const urgentJobs = jobs.filter(job => job.isUrgent);
+  
+  // Categories for quick filtering
+  const categories = ["Remote", "Full-time", "Tech", "Marketing", "Finance"];
+  
+  // Filter jobs based on search query or category
+  useEffect(() => {
+    let results = [...jobs];
+    
+    // Filter by search query
+    if (searchQuery) {
+      results = results.filter(job => 
+        job.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        job.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        job.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+      );
+    }
+    
+    // Filter by category
+    if (selectedCategory) {
+      results = results.filter(job => 
+        job.type.toLowerCase() === selectedCategory.toLowerCase() || 
+        job.tags.some(tag => tag.toLowerCase() === selectedCategory.toLowerCase())
+      );
+    }
+    
+    setFilteredJobs(results.slice(0, 4));
+  }, [searchQuery, selectedCategory]);
+  
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!searchQuery.trim()) {
+      return;
+    }
+    
+    // For real app, this would navigate to search results page
+    toast.success(`Searching for "${searchQuery}" jobs`);
+    
+    // Navigate to jobs page with search parameter (placeholder - would be implemented later)
+    // navigate(`/jobs?search=${encodeURIComponent(searchQuery)}`);
+  };
+  
+  const handleCategoryClick = (category: string) => {
+    setSelectedCategory(prevCategory => prevCategory === category ? "" : category);
+    toast.success(`Showing ${category} jobs`);
+  };
   
   return (
     <div className="flex flex-col min-h-screen">
@@ -35,34 +88,37 @@ const Index = () => {
                 Discover thousands of job opportunities with all the information you need.
               </p>
               
-              <div className="bg-white rounded-lg p-2 flex flex-col md:flex-row shadow-lg">
+              <form onSubmit={handleSearch} className="bg-white rounded-lg p-2 flex flex-col md:flex-row shadow-lg">
                 <Input
                   placeholder="Job title, keywords, or company"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="mb-2 md:mb-0 md:mr-2 flex-grow bg-transparent text-gray-900"
                 />
-                <Button className="bg-primary-600 hover:bg-primary-700 text-white">
+                <Button 
+                  type="submit" 
+                  className="bg-primary-600 hover:bg-primary-700 text-white"
+                >
+                  <Search className="w-4 h-4 mr-2" />
                   Search Jobs
                 </Button>
-              </div>
+              </form>
               
               <div className="mt-6 flex flex-wrap justify-center gap-2">
-                <Badge variant="secondary" className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white">
-                  Remote
-                </Badge>
-                <Badge variant="secondary" className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white">
-                  Full-time
-                </Badge>
-                <Badge variant="secondary" className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white">
-                  Tech
-                </Badge>
-                <Badge variant="secondary" className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white">
-                  Marketing
-                </Badge>
-                <Badge variant="secondary" className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white">
-                  Finance
-                </Badge>
+                {categories.map((category) => (
+                  <Badge 
+                    key={category}
+                    variant="secondary" 
+                    className={`${
+                      selectedCategory === category 
+                        ? "bg-white text-primary-700" 
+                        : "bg-white bg-opacity-20 hover:bg-opacity-30 text-white"
+                    } cursor-pointer transition-all`}
+                    onClick={() => handleCategoryClick(category)}
+                  >
+                    {category}
+                  </Badge>
+                ))}
               </div>
             </div>
           </div>
@@ -72,7 +128,10 @@ const Index = () => {
         <section className="py-16 bg-gray-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center mb-8">
-              <h2 className="text-3xl font-bold">Featured Jobs</h2>
+              <h2 className="text-3xl font-bold">
+                {selectedCategory ? `${selectedCategory} Jobs` : "Featured Jobs"}
+                {searchQuery && ` matching "${searchQuery}"`}
+              </h2>
               <Link to="/jobs">
                 <Button variant="outline" className="border-primary text-primary hover:bg-primary-100">
                   View all jobs
@@ -81,9 +140,24 @@ const Index = () => {
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {featuredJobs.map(job => (
-                <JobCard key={job.id} job={job} />
-              ))}
+              {filteredJobs.length > 0 ? (
+                filteredJobs.map(job => (
+                  <JobCard key={job.id} job={job} />
+                ))
+              ) : (
+                <div className="col-span-2 text-center py-12">
+                  <p className="text-lg text-gray-500">No jobs found matching your criteria.</p>
+                  <Button 
+                    className="mt-4 bg-primary hover:bg-primary-600"
+                    onClick={() => {
+                      setSearchQuery("");
+                      setSelectedCategory("");
+                    }}
+                  >
+                    Clear filters
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         </section>
@@ -99,7 +173,7 @@ const Index = () => {
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="text-center">
+              <div className="text-center hover:transform hover:scale-105 transition-transform">
                 <div className="w-16 h-16 bg-primary-100 text-primary-700 rounded-full flex items-center justify-center text-xl font-bold mx-auto">
                   1
                 </div>
@@ -109,7 +183,7 @@ const Index = () => {
                 </p>
               </div>
               
-              <div className="text-center">
+              <div className="text-center hover:transform hover:scale-105 transition-transform">
                 <div className="w-16 h-16 bg-primary-100 text-primary-700 rounded-full flex items-center justify-center text-xl font-bold mx-auto">
                   2
                 </div>
@@ -119,7 +193,7 @@ const Index = () => {
                 </p>
               </div>
               
-              <div className="text-center">
+              <div className="text-center hover:transform hover:scale-105 transition-transform">
                 <div className="w-16 h-16 bg-primary-100 text-primary-700 rounded-full flex items-center justify-center text-xl font-bold mx-auto">
                   3
                 </div>
@@ -148,7 +222,7 @@ const Index = () => {
                             <img
                               src={job.companyLogo}
                               alt={`${job.company} logo`}
-                              className="w-10 h-10 rounded-full bg-gray-100"
+                              className="w-10 h-10 rounded-full bg-gray-100 object-cover"
                             />
                             <div>
                               <h3 className="font-semibold">{job.title}</h3>
@@ -207,6 +281,7 @@ const Index = () => {
               <Button
                 size="lg"
                 className="bg-white text-primary hover:bg-gray-100"
+                onClick={() => navigate("/jobs")}
               >
                 Browse All Jobs
               </Button>
@@ -214,6 +289,7 @@ const Index = () => {
                 size="lg"
                 variant="outline"
                 className="border-white text-white hover:bg-white hover:text-primary"
+                onClick={() => navigate("/post-job")}
               >
                 For Employers
               </Button>

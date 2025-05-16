@@ -1,5 +1,6 @@
 
 import { Link } from "react-router-dom";
+import { Mail, Phone, MapPin } from "lucide-react";
 
 const Footer = () => {
   return (
@@ -63,10 +64,18 @@ const Footer = () => {
           <div>
             <h4 className="text-md font-semibold mb-4">Contact Us</h4>
             <address className="not-italic text-sm text-gray-300">
-              <p>1234 Career Avenue</p>
-              <p>New York, NY 10001</p>
-              <p className="mt-2">Email: info@suhanijobs.com</p>
-              <p>Phone: (123) 456-7890</p>
+              <div className="flex items-center space-x-2 mb-2">
+                <MapPin className="w-4 h-4 text-gray-400" />
+                <p>Mohali, Punjab, India</p>
+              </div>
+              <div className="flex items-center space-x-2 mb-2">
+                <Mail className="w-4 h-4 text-gray-400" />
+                <p>Email: suhani0472@gmail.com</p>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Phone className="w-4 h-4 text-gray-400" />
+                <p>Phone: +91 8619699246</p>
+              </div>
             </address>
           </div>
         </div>
